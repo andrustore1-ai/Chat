@@ -37,6 +37,17 @@ async function fbPatch(path,data){
   return await r.json();
 }
 
+async function saveWebhookHealth(kind,data){
+  try{
+    await fbPut(`${ROOT}/webhookHealth/${kind}`,{
+      at:Date.now(),
+      ...data
+    });
+  }catch(e){
+    console.warn('WEBHOOK_HEALTH_WRITE_FAILED',kind,e.message);
+  }
+}
+
 function getIncomingText(body){
   const md=body?.messageData||{};
   if(md.typeMessage==='textMessage') return clean(md.textMessageData?.textMessage);
@@ -221,25 +232,52 @@ export async function GET(){
   return Response.json({
     ok:true,
     service:'Cash Top WhatsApp AI',
-    version:'2-safe-send',
-    endpoint:'/api/webhook'
-  });
+    version:'3-webhook-only',
+    endpoint:'/api/webhook',
+    accepts:'POST',
+    note:'GREEN API should POST incoming notifications here.'
+  },{headers:{'cache-control':'no-store'}});
 }
 
 export async function POST(request){
   const started=Date.now();
   try{
-    const body=await request.json().catch(()=>({}));
-    console.log('WEBHOOK_RECEIVED',body?.typeWebhook||'unknown',body?.idMessage||'');
-
-    if(body?.typeWebhook!=='incomingMessageReceived'){
-      return Response.json({ok:true,ignored:'webhook_type'});
+    const raw=await request.text();
+    let body={};
+    try{ body=raw ? JSON.parse(raw) : {}; }catch(e){
+      console.warn('WEBHOOK_BAD_JSON',raw.slice(0,500));
+      await saveWebhookHealth('lastReceived',{
+        ok:false,
+        reason:'bad_json',
+        contentType:request.headers.get('content-type')||'',
+        size:raw.length,
+        preview:raw.slice(0,500)
+      });
+      // Return 200 so a malformed notification does not block the GREEN API queue.
+      return Response.json({ok:true,ignored:'bad_json'});
     }
 
     const chatId=clean(body?.senderData?.chatId||body?.senderData?.sender);
     const senderName=clean(body?.senderData?.senderName||body?.senderData?.senderContactName);
     const idMessage=clean(body?.idMessage);
     const text=getIncomingText(body);
+
+    console.log('WEBHOOK_RECEIVED',body?.typeWebhook||'unknown',idMessage||'');
+
+    await saveWebhookHealth('lastReceived',{
+      ok:true,
+      typeWebhook:body?.typeWebhook||'unknown',
+      idMessage:idMessage||'',
+      chatId:chatId||'',
+      typeMessage:body?.messageData?.typeMessage||'',
+      textPreview:text.slice(0,160),
+      userAgent:request.headers.get('user-agent')||'',
+      contentType:request.headers.get('content-type')||''
+    });
+
+    if(body?.typeWebhook!=='incomingMessageReceived'){
+      return Response.json({ok:true,ignored:'webhook_type'});
+    }
 
     console.log('INCOMING_PARSED',{chatId,idMessage,type:body?.messageData?.typeMessage,text:text.slice(0,100)});
 
@@ -272,16 +310,30 @@ export async function POST(request){
       markProcessedBestEffort(idMessage,chatId)
     ]).catch(()=>{});
 
-    console.log('WEBHOOK_SUCCESS',chatId,'ms=',Date.now()-started);
+    const elapsed=Date.now()-started;
+    console.log('WEBHOOK_SUCCESS',chatId,'ms=',elapsed);
+
+    await saveWebhookHealth('lastSuccess',{
+      chatId,
+      incomingIdMessage:idMessage||'',
+      outgoingIdMessage:sent?.idMessage||'',
+      ms:elapsed
+    });
 
     return Response.json({
       ok:true,
       replied:true,
       idMessage:sent?.idMessage||null,
-      ms:Date.now()-started
+      ms:elapsed
     });
   }catch(e){
-    console.error('WEBHOOK_FATAL',e?.stack||e?.message||String(e));
-    return Response.json({ok:false,error:String(e?.message||e)}, {status:500});
+    const message=String(e?.message||e);
+    console.error('WEBHOOK_FATAL',e?.stack||message);
+    await saveWebhookHealth('lastError',{
+      error:message,
+      ms:Date.now()-started
+    });
+    // GREEN API retries the same notification when the endpoint does not return 200.
+    return Response.json({ok:false,error:message}, {status:500});
   }
 }
