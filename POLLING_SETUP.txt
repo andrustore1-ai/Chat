@@ -1,0 +1,17 @@
+Cash Top WhatsApp AI - Polling mode
+
+1) Add this Vercel Environment Variable:
+POLL_SECRET=CTPOLL_To9ZMiIHZDU66TExVRSAww
+
+2) Deploy these files.
+
+3) Enable ReceiveNotification mode once:
+https://chat-chat-eead.vercel.app/api/http-mode?key=CTPOLL_To9ZMiIHZDU66TExVRSAww
+
+4) Manual poll test:
+https://chat-chat-eead.vercel.app/api/poll?key=CTPOLL_To9ZMiIHZDU66TExVRSAww
+
+5) For 24/7 operation create an external cron job every 1 minute that calls:
+https://chat-chat-eead.vercel.app/api/poll?key=CTPOLL_To9ZMiIHZDU66TExVRSAww
+
+Do NOT configure GREEN API webhookUrl while polling mode is used.
