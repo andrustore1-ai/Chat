@@ -5,43 +5,148 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Cash Top - Webhook Admin</title>
 <style>
-  *{box-sizing:border-box}body{font-family:system-ui,-apple-system,Segoe UI,Tahoma,Arial,sans-serif;background:#f5f7f8;margin:0;padding:22px;color:#17202a}
-  .card{max-width:720px;margin:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 8px 28px #00000012}
-  h1{font-size:22px;margin:0 0 8px}.muted{color:#667085;font-size:14px;line-height:1.8}
-  input{width:100%;padding:13px;border:1px solid #d0d5dd;border-radius:12px;font-size:15px;margin:10px 0}
-  .grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
-  button{border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;background:#0f9d58;color:white}
-  button.secondary{background:#344054}.status{margin-top:16px;background:#101828;color:#e5e7eb;border-radius:14px;padding:14px;white-space:pre-wrap;word-break:break-word;min-height:90px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
-  .warn{background:#fff7ed;border:1px solid #fed7aa;padding:12px;border-radius:12px;margin-top:12px;font-size:14px;line-height:1.7}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Tahoma,Arial,sans-serif;background:#f5f7f8;margin:0;padding:22px;color:#17202a}
+.card{max-width:720px;margin:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 8px 28px #00000012}
+h1{font-size:22px;margin:0 0 8px}.muted{color:#667085;font-size:14px;line-height:1.8}
+input{width:100%;padding:13px;border:1px solid #d0d5dd;border-radius:12px;font-size:15px;margin:10px 0}
+.grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+button{border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;background:#0f9d58;color:#fff}
+button.secondary{background:#344054}
+button.import{background:#7c3aed}
+button:disabled{opacity:.55;cursor:not-allowed}
+.status{margin-top:16px;background:#101828;color:#e5e7eb;border-radius:14px;padding:14px;white-space:pre-wrap;word-break:break-word;min-height:90px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.warn{background:#fff7ed;border:1px solid #fed7aa;padding:12px;border-radius:12px;margin-top:12px;font-size:14px;line-height:1.7}
+.learn{background:#f5f3ff;border:1px solid #ddd6fe;padding:14px;border-radius:14px;margin-top:16px}
+.learn h2{font-size:17px;margin:0 0 8px}.row{display:flex;gap:8px;align-items:center}.row input{margin:0;flex:1}.small{font-size:12px;color:#667085;line-height:1.7}
+.progress{height:10px;background:#e4e7ec;border-radius:999px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:#7c3aed;transition:.2s}
 </style>
 </head>
 <body>
 <div class="card">
-  <h1>Cash Top — Webhook فقط</h1>
-  <div class="muted">أدخل قيمة <b>POLL_SECRET</b> مرة واحدة. هذه الصفحة لا تستخدم Poll ولا Cron.</div>
+  <h1>Cash Top — Webhook + التعلم البشري</h1>
+  <div class="muted">أدخل قيمة <b>POLL_SECRET</b> مرة واحدة. التشغيل اليومي يعتمد على Webhook فقط.</div>
+
   <input id="key" type="password" placeholder="POLL_SECRET" autocomplete="off" />
+
   <div class="grid">
-    <button onclick="run('on')">1) تفعيل Webhook</button>
-    <button class="secondary" onclick="run('test')">2) اختبار POST داخل Vercel</button>
-    <button class="secondary" onclick="run('check')">3) فحص الحالة</button>
+    <button onclick="runBasic('on')">1) تفعيل Webhook + التعلم من ردودي</button>
+    <button class="secondary" onclick="runBasic('test')">2) اختبار POST داخل Vercel</button>
+    <button class="secondary" onclick="runBasic('check')">3) فحص الحالة</button>
   </div>
-  <div class="warn">بعد زر التفعيل: GREEN API يعيد تشغيل الـInstance، والإعدادات قد تحتاج حتى 5 دقائق. بعدها ابعث رسالة واتساب جديدة واضغط «فحص الحالة».</div>
+
+  <div class="warn">زر التفعيل استخدمه عند الحاجة فقط؛ تغيير إعدادات GREEN API قد يعيد تشغيل الـInstance.</div>
+
+  <div class="learn">
+    <h2>استيراد المحادثات القديمة</h2>
+    <div class="small">
+      يستورد <b>كل محادثات الزبائن الشخصية التي ترجعها GREEN API</b>، وليس 20 فقط.
+      ويتجاهل رسائل البوت/API ويأخذ ردودك اليدوية فقط.
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <input id="messages" type="number" min="50" max="2000" value="500" placeholder="عدد الرسائل لكل محادثة">
+    </div>
+    <div class="small">افتراضياً يفحص آخر 500 رسالة من كل محادثة. تقدر ترفعها حتى 2000.</div>
+
+    <div class="grid">
+      <button id="importBtn" class="import" onclick="importAll()">4) استيراد كل محادثات الزبائن</button>
+      <button class="secondary" onclick="learningStats()">5) إحصائيات قاعدة التعلم</button>
+    </div>
+
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <div id="progressText" class="small">لم يبدأ الاستيراد.</div>
+  </div>
+
   <div id="out" class="status">جاهز.</div>
 </div>
+
 <script>
 const keyEl=document.getElementById('key');
+const out=document.getElementById('out');
+const bar=document.getElementById('bar');
+const progressText=document.getElementById('progressText');
+const importBtn=document.getElementById('importBtn');
+
 keyEl.value=localStorage.getItem('cashTopWebhookKey')||'';
-async function run(type){
+
+function getKey(){
   const key=keyEl.value.trim();
-  if(!key){alert('أدخل POLL_SECRET');return}
+  if(!key){alert('أدخل POLL_SECRET');return null}
   localStorage.setItem('cashTopWebhookKey',key);
+  return key;
+}
+
+async function getJson(url){
+  const r=await fetch(url,{cache:'no-store'});
+  const t=await r.text();
+  let d;try{d=JSON.parse(t)}catch{d={ok:false,raw:t}}
+  if(!r.ok && d.ok!==false)d.ok=false;
+  return d;
+}
+
+async function runBasic(type){
+  const key=getKey();if(!key)return;
   const path=type==='on'?'/api/webhook-on':type==='test'?'/api/webhook-test':'/api/webhook-check';
-  const out=document.getElementById('out');
   out.textContent='جاري التنفيذ...';
   try{
-    const r=await fetch(path+'?key='+encodeURIComponent(key),{cache:'no-store'});
-    const t=await r.text();
-    let d;try{d=JSON.parse(t)}catch{d={raw:t}}
+    const d=await getJson(path+'?key='+encodeURIComponent(key));
+    out.textContent=JSON.stringify(d,null,2);
+  }catch(e){out.textContent='ERROR: '+e.message}
+}
+
+function paintProgress(d){
+  const p=Math.max(0,Math.min(100,Number(d.progress||0)));
+  bar.style.width=p+'%';
+  progressText.textContent=
+    `التقدم: ${p}% — تمت معالجة ${d.processedChats||0} من ${d.totalChats||0} محادثة — أمثلة تعلم: ${d.importedPairs||0}`+
+    (d.errors?` — أخطاء: ${d.errors}`:'');
+}
+
+async function importAll(){
+  const key=getKey();if(!key)return;
+  const messages=Math.max(50,Math.min(2000,Number(document.getElementById('messages').value||500)));
+  importBtn.disabled=true;
+  bar.style.width='0%';
+  progressText.textContent='جاري جلب كل المحادثات المتاحة...';
+  out.textContent='بدء الاستيراد...';
+
+  try{
+    const start=await getJson(`/api/import-human-history?key=${encodeURIComponent(key)}&action=start&messages=${messages}&_=${Date.now()}`);
+    out.textContent=JSON.stringify(start,null,2);
+    if(!start.ok)throw new Error(start.error||'فشل بدء الاستيراد');
+
+    if(!start.totalChats){
+      progressText.textContent='لا توجد محادثات شخصية متاحة للاستيراد.';
+      bar.style.width='100%';
+      return;
+    }
+
+    progressText.textContent=`تم العثور على ${start.totalChats} محادثة. جاري الاستيراد...`;
+
+    while(true){
+      const d=await getJson(`/api/import-human-history?key=${encodeURIComponent(key)}&action=batch&batch=5&_=${Date.now()}`);
+      out.textContent=JSON.stringify(d,null,2);
+      if(!d.ok)throw new Error(d.error||'فشل الاستيراد');
+      paintProgress(d);
+      if(d.done)break;
+      await new Promise(r=>setTimeout(r,700));
+    }
+
+    progressText.textContent += ' ✅ اكتمل الاستيراد.';
+  }catch(e){
+    out.textContent='ERROR: '+e.message;
+    progressText.textContent='توقف الاستيراد بسبب خطأ. اضغط الزر من جديد للبدء من البداية.';
+  }finally{
+    importBtn.disabled=false;
+  }
+}
+
+async function learningStats(){
+  const key=getKey();if(!key)return;
+  out.textContent='جاري جلب الإحصائيات...';
+  try{
+    const d=await getJson('/api/learning-stats?key='+encodeURIComponent(key)+'&_='+Date.now());
     out.textContent=JSON.stringify(d,null,2);
   }catch(e){out.textContent='ERROR: '+e.message}
 }
