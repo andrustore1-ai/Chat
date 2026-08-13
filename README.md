@@ -21,3 +21,7 @@ It stores per-customer conversation memory in:
 
 It stores processed message IDs in:
 - cashTopAI/whatsappProcessed
+
+
+## Diagnostics
+- `api/diagnostics.js`: checks GREEN API state, current webhook URL, incomingWebhook, Firebase and Groq readiness without exposing the API token.

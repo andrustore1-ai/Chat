@@ -5,34 +5,82 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cash Top WhatsApp AI</title>
 <style>
-*{box-sizing:border-box;font-family:Arial,Tahoma,sans-serif}body{margin:0;background:#f1f5f9;color:#0f172a;display:grid;min-height:100vh;place-items:center;padding:18px}
-.card{width:min(620px,100%);background:#fff;border:1px solid #e2e8f0;border-radius:22px;padding:22px;box-shadow:0 18px 60px rgba(15,23,42,.1)}
-h1{margin:0 0 8px;color:#047857}p{line-height:1.8;color:#475569}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;white-space:pre-wrap;margin:12px 0}
-button{width:100%;padding:13px;border:0;border-radius:12px;background:#10b981;color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
-button.alt{background:#2563eb}.ok{color:#047857}.bad{color:#dc2626}.small{font-size:12px;color:#64748b}
+*{box-sizing:border-box;font-family:Arial,Tahoma,sans-serif}
+body{margin:0;background:#f1f5f9;color:#0f172a;display:grid;min-height:100vh;place-items:center;padding:18px}
+.card{width:min(680px,100%);background:#fff;border:1px solid #e2e8f0;border-radius:22px;padding:22px;box-shadow:0 18px 60px rgba(15,23,42,.1)}
+h1{margin:0 0 8px;color:#047857;font-size:34px;line-height:1.1}
+p{line-height:1.8;color:#475569}
+.status{padding:13px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;white-space:pre-wrap;margin:12px 0;word-break:break-word;direction:ltr;text-align:left;font-family:monospace;font-size:13px;max-height:390px;overflow:auto}
+button{width:100%;padding:14px;border:0;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:9px}
+.blue{background:#2563eb}.green{background:#10b981}.dark{background:#0f172a}.amber{background:#d97706}
+.ok{color:#047857}.bad{color:#dc2626}.small{font-size:12px;color:#64748b}
+.summary{display:none;margin:12px 0;padding:12px;border-radius:12px;line-height:1.8;font-weight:700}
+.summary.good{display:block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.summary.problem{display:block;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
 </style>
 </head>
 <body>
 <div class="card">
-<h1>🤖 Cash Top WhatsApp AI</h1>
-<p>هذه الصفحة تعني أن مشروع Vercel يعمل. البوت نفسه موجود في <b>/api/webhook</b>.</p>
+<h1>Cash Top 🤖<br>WhatsApp AI</h1>
+<p>المشروع يعمل على Vercel. استقبال واتساب يتم من <b>/api/webhook</b>.</p>
+
+<div id="summary" class="summary"></div>
 <div id="status" class="status">جاري فحص النظام...</div>
-<button class="alt" onclick="check()">فحص الاتصال</button>
-<button onclick="setup()">ربط GREEN API بهذا المشروع</button>
-<p class="small">قبل زر الربط يجب إضافة متغيرات GREEN API في Vercel. بعد الربط قد تحتاج إعدادات GREEN API عدة دقائق حتى تُطبق.</p>
+
+<button class="blue" onclick="check()">فحص الاتصال</button>
+<button class="dark" onclick="diagnose()">🔍 تشخيص GREEN API بالكامل</button>
+<button class="green" onclick="setup()">ربط / إصلاح GREEN API بهذا المشروع</button>
+
+<p class="small">
+زر التشخيص لا يغيّر أي إعداد. زر الربط/الإصلاح يحدّث Webhook في GREEN API، لذلك استخدمه فقط إذا أظهر التشخيص أن الرابط أو incomingWebhook غير صحيح.
+</p>
 </div>
+
 <script>
+const box=document.getElementById('status');
+const summary=document.getElementById('summary');
+
+function show(data){
+  box.className='status '+(data?.ok===false?'bad':'ok');
+  box.textContent=JSON.stringify(data,null,2);
+}
+function setSummary(text, good){
+  summary.textContent=text;
+  summary.className='summary '+(good?'good':'problem');
+}
 async function check(){
- const el=document.getElementById('status');el.textContent='جاري الفحص...';
- try{const r=await fetch('/api/status');const d=await r.json();el.className='status '+(d.ok?'ok':'bad');el.textContent=JSON.stringify(d,null,2)}
- catch(e){el.className='status bad';el.textContent=e.message}
+  box.textContent='جاري الفحص...'; summary.className='summary';
+  try{
+    const r=await fetch('/api/status',{cache:'no-store'});
+    show(await r.json());
+  }catch(e){show({ok:false,error:e.message})}
+}
+async function diagnose(){
+  box.textContent='جاري فحص GREEN API و Firebase و Groq...'; summary.className='summary';
+  try{
+    const r=await fetch('/api/diagnostics',{cache:'no-store'});
+    const d=await r.json();
+    show(d);
+    if(d.ready){
+      setSummary('✅ التشخيص سليم: الحساب Authorized، Webhook صحيح، incomingWebhook مفعّل، Firebase وGroq جاهزان.',true);
+    }else{
+      const rec=(d.recommendations||[]).join('\n• ');
+      setSummary('⚠️ يوجد خلل في الإعدادات:\n• '+(rec||'راجع نتيجة التشخيص أدناه.'),false);
+    }
+  }catch(e){
+    show({ok:false,error:e.message});
+    setSummary('تعذر تشغيل التشخيص.',false);
+  }
 }
 async function setup(){
- const el=document.getElementById('status');el.textContent='جاري ربط GREEN API...';
- try{
-   const r=await fetch('/api/setup',{method:'POST'});const d=await r.json();
-   el.className='status '+(d.ok?'ok':'bad');el.textContent=JSON.stringify(d,null,2);
- }catch(e){el.className='status bad';el.textContent=e.message}
+  if(!confirm('سيتم تحديث إعداد Webhook في GREEN API إلى رابط هذا المشروع. متابعة؟'))return;
+  box.textContent='جاري ربط / إصلاح GREEN API...'; summary.className='summary';
+  try{
+    const r=await fetch('/api/setup',{method:'POST'});
+    const d=await r.json();
+    show(d);
+    setSummary(d.ok?'✅ تم إرسال إعداد Webhook إلى GREEN API. انتظر تطبيق الإعدادات ثم شغّل التشخيص.':'❌ لم ينجح الربط.',!!d.ok);
+  }catch(e){show({ok:false,error:e.message})}
 }
 check();
 </script>
