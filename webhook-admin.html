@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Cash Top - Webhook Admin</title>
+<style>
+  *{box-sizing:border-box}body{font-family:system-ui,-apple-system,Segoe UI,Tahoma,Arial,sans-serif;background:#f5f7f8;margin:0;padding:22px;color:#17202a}
+  .card{max-width:720px;margin:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 8px 28px #00000012}
+  h1{font-size:22px;margin:0 0 8px}.muted{color:#667085;font-size:14px;line-height:1.8}
+  input{width:100%;padding:13px;border:1px solid #d0d5dd;border-radius:12px;font-size:15px;margin:10px 0}
+  .grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+  button{border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;background:#0f9d58;color:white}
+  button.secondary{background:#344054}.status{margin-top:16px;background:#101828;color:#e5e7eb;border-radius:14px;padding:14px;white-space:pre-wrap;word-break:break-word;min-height:90px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+  .warn{background:#fff7ed;border:1px solid #fed7aa;padding:12px;border-radius:12px;margin-top:12px;font-size:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Cash Top — Webhook فقط</h1>
+  <div class="muted">أدخل قيمة <b>POLL_SECRET</b> مرة واحدة. هذه الصفحة لا تستخدم Poll ولا Cron.</div>
+  <input id="key" type="password" placeholder="POLL_SECRET" autocomplete="off" />
+  <div class="grid">
+    <button onclick="run('on')">1) تفعيل Webhook</button>
+    <button class="secondary" onclick="run('test')">2) اختبار POST داخل Vercel</button>
+    <button class="secondary" onclick="run('check')">3) فحص الحالة</button>
+  </div>
+  <div class="warn">بعد زر التفعيل: GREEN API يعيد تشغيل الـInstance، والإعدادات قد تحتاج حتى 5 دقائق. بعدها ابعث رسالة واتساب جديدة واضغط «فحص الحالة».</div>
+  <div id="out" class="status">جاهز.</div>
+</div>
+<script>
+const keyEl=document.getElementById('key');
+keyEl.value=localStorage.getItem('cashTopWebhookKey')||'';
+async function run(type){
+  const key=keyEl.value.trim();
+  if(!key){alert('أدخل POLL_SECRET');return}
+  localStorage.setItem('cashTopWebhookKey',key);
+  const path=type==='on'?'/api/webhook-on':type==='test'?'/api/webhook-test':'/api/webhook-check';
+  const out=document.getElementById('out');
+  out.textContent='جاري التنفيذ...';
+  try{
+    const r=await fetch(path+'?key='+encodeURIComponent(key),{cache:'no-store'});
+    const t=await r.text();
+    let d;try{d=JSON.parse(t)}catch{d={raw:t}}
+    out.textContent=JSON.stringify(d,null,2);
+  }catch(e){out.textContent='ERROR: '+e.message}
+}
+</script>
+</body>
+</html>

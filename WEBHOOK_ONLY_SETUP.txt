@@ -1,0 +1,21 @@
+Cash Top - Vercel Webhook Only
+
+Upload the update files to the same Vercel/GitHub project, then redeploy.
+
+Open:
+https://YOUR-DOMAIN/webhook-admin.html
+
+1) Enter POLL_SECRET.
+2) Press "تفعيل Webhook" once.
+3) IMPORTANT: GREEN API documentation says setSettings reboots the instance and settings may take up to 5 minutes to apply.
+4) After the instance returns authorized, send a NEW WhatsApp message.
+5) Press "فحص الحالة".
+
+Expected:
+- green.webhookExact = true
+- green.incomingEnabled = true
+- green.stateInstance = authorized
+- webhookHealth.lastReceived appears after GREEN API sends a POST
+- webhookHealth.lastSuccess appears after the AI reply is sent
+
+Do not use /api/http-mode or /api/poll. They are disabled in this package.
