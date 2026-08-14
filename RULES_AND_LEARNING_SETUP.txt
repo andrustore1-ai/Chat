@@ -1,0 +1,16 @@
+Cash Top WhatsApp AI — Rules + No Repeat + Greetings + Clear Human Learning
+
+After upload/deploy:
+1) Open /webhook-admin.html
+2) Enter POLL_SECRET.
+3) You do NOT need to press Webhook activation again if Webhook is already working.
+4) Use "Rules" to add/delete/disable bot behavior instructions.
+5) "Delete learning from messages" clears only humanLearning data; Q&A/Knowledge remain.
+
+Built-in behavior:
+- Greetings: السلام عليكم، مرحبا، هلا، صباح الخير، مساء الخير، and common Arabic/English greetings.
+- Pure punctuation/emoji messages are ignored to prevent pointless repeated fallback replies.
+- Duplicate-response guard prevents sending the same answer verbatim again.
+- Short followups such as بس؟ / طيب؟ / كيف؟ are treated using previous conversation context.
+- Manager rules are passed to the AI as mandatory behavior/style rules, without allowing invention of facts.
+- Optional rule media: a rule can include a public direct file URL. Modes: according to AI/context, greetings only, or every reply.

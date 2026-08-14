@@ -3,62 +3,93 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Cash Top - Webhook Admin</title>
+<title>Cash Top - إعدادات بوت واتساب</title>
 <style>
 *{box-sizing:border-box}
-body{font-family:system-ui,-apple-system,Segoe UI,Tahoma,Arial,sans-serif;background:#f5f7f8;margin:0;padding:22px;color:#17202a}
-.card{max-width:720px;margin:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 8px 28px #00000012}
-h1{font-size:22px;margin:0 0 8px}.muted{color:#667085;font-size:14px;line-height:1.8}
-input{width:100%;padding:13px;border:1px solid #d0d5dd;border-radius:12px;font-size:15px;margin:10px 0}
-.grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
-button{border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;background:#0f9d58;color:#fff}
-button.secondary{background:#344054}
-button.import{background:#7c3aed}
-button:disabled{opacity:.55;cursor:not-allowed}
-.status{margin-top:16px;background:#101828;color:#e5e7eb;border-radius:14px;padding:14px;white-space:pre-wrap;word-break:break-word;min-height:90px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
-.warn{background:#fff7ed;border:1px solid #fed7aa;padding:12px;border-radius:12px;margin-top:12px;font-size:14px;line-height:1.7}
-.learn{background:#f5f3ff;border:1px solid #ddd6fe;padding:14px;border-radius:14px;margin-top:16px}
-.learn h2{font-size:17px;margin:0 0 8px}.row{display:flex;gap:8px;align-items:center}.row input{margin:0;flex:1}.small{font-size:12px;color:#667085;line-height:1.7}
-.progress{height:10px;background:#e4e7ec;border-radius:999px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:#7c3aed;transition:.2s}
+body{font-family:system-ui,-apple-system,Segoe UI,Tahoma,Arial,sans-serif;background:#f4f7f6;margin:0;padding:18px;color:#17202a}
+.wrap{max-width:780px;margin:auto}
+.card{background:#fff;border-radius:20px;padding:18px;margin-bottom:15px;box-shadow:0 8px 28px #0000000d;border:1px solid #eaecf0}
+h1{font-size:24px;margin:0 0 6px}.sub{color:#667085;font-size:14px;line-height:1.8}.title{font-size:19px;font-weight:800;margin-bottom:8px}
+input,textarea,select{width:100%;padding:13px;border:1px solid #d0d5dd;border-radius:12px;font:inherit;background:#fff;color:#17202a}
+textarea{min-height:105px;resize:vertical}.field{margin-top:10px}.label{font-size:13px;font-weight:700;margin:0 0 6px;color:#344054}
+.grid{display:grid;grid-template-columns:1fr;gap:9px;margin-top:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{border:0;border-radius:12px;padding:13px 14px;font-size:15px;font-weight:800;cursor:pointer;background:#0f9d58;color:#fff}
+button.secondary{background:#344054}button.purple{background:#7c3aed}button.danger{background:#c62828}button.light{background:#eef2f6;color:#344054}button:disabled{opacity:.55;cursor:not-allowed}
+.note{padding:12px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;font-size:13px;line-height:1.7;margin-top:10px}
+.oknote{padding:12px;border-radius:12px;background:#ecfdf3;border:1px solid #abefc6;font-size:13px;line-height:1.7;margin-top:10px}
+.status{margin-top:12px;background:#101828;color:#e5e7eb;border-radius:14px;padding:13px;white-space:pre-wrap;word-break:break-word;min-height:70px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;direction:ltr;text-align:left}
+.progress{height:10px;background:#e4e7ec;border-radius:999px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:#7c3aed;transition:.2s}.small{font-size:12px;color:#667085;line-height:1.7}
+.rule{border:1px solid #e4e7ec;border-radius:14px;padding:12px;margin-top:9px;background:#fcfcfd}.ruleTop{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.ruleText{font-size:14px;line-height:1.8;white-space:pre-wrap;word-break:break-word;flex:1}.ruleActions{display:flex;gap:6px;flex-wrap:wrap}.ruleActions button{padding:8px 10px;font-size:12px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef4ff;color:#3538cd;font-size:11px;margin-top:7px}.off{opacity:.55}.examples{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.examples button{background:#f2f4f7;color:#344054;font-size:12px;padding:8px 10px;font-weight:700}
+hr{border:0;border-top:1px solid #eaecf0;margin:16px 0}
+@media(max-width:560px){body{padding:10px}.two{grid-template-columns:1fr}.card{padding:15px;border-radius:16px}h1{font-size:21px}}
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>Cash Top — Webhook + التعلم البشري</h1>
-  <div class="muted">أدخل قيمة <b>POLL_SECRET</b> مرة واحدة. التشغيل اليومي يعتمد على Webhook فقط.</div>
-
-  <input id="key" type="password" placeholder="POLL_SECRET" autocomplete="off" />
-
-  <div class="grid">
-    <button onclick="runBasic('on')">1) تفعيل Webhook + التعلم من ردودي</button>
-    <button class="secondary" onclick="runBasic('test')">2) اختبار POST داخل Vercel</button>
-    <button class="secondary" onclick="runBasic('check')">3) فحص الحالة</button>
+<div class="wrap">
+  <div class="card">
+    <h1>إعدادات بوت Cash Top</h1>
+    <div class="sub">Webhook + التعلم من ردودك اليدوية + قواعد المدير + منع التكرار.</div>
+    <div class="field"><div class="label">POLL_SECRET</div><input id="key" type="password" placeholder="أدخل POLL_SECRET" autocomplete="off"></div>
+    <div class="grid">
+      <button onclick="runBasic('on')">1) تفعيل Webhook + التعلم من ردودي</button>
+      <button class="secondary" onclick="runBasic('test')">2) اختبار POST داخل Vercel</button>
+      <button class="secondary" onclick="runBasic('check')">3) فحص الحالة</button>
+    </div>
+    <div class="note">زر التفعيل استخدمه عند الحاجة فقط؛ تغيير إعدادات GREEN API قد يعيد تشغيل الـInstance.</div>
   </div>
 
-  <div class="warn">زر التفعيل استخدمه عند الحاجة فقط؛ تغيير إعدادات GREEN API قد يعيد تشغيل الـInstance.</div>
-
-  <div class="learn">
-    <h2>استيراد المحادثات القديمة</h2>
-    <div class="small">
-      يستورد <b>كل محادثات الزبائن الشخصية التي ترجعها GREEN API</b>، وليس 20 فقط.
-      ويتجاهل رسائل البوت/API ويأخذ ردودك اليدوية فقط.
-    </div>
-
-    <div class="row" style="margin-top:10px">
-      <input id="messages" type="number" min="50" max="2000" value="500" placeholder="عدد الرسائل لكل محادثة">
-    </div>
-    <div class="small">افتراضياً يفحص آخر 500 رسالة من كل محادثة. تقدر ترفعها حتى 2000.</div>
-
+  <div class="card">
+    <div class="title">🧠 التعلم من محادثات الزبائن</div>
+    <div class="sub">التعلم يأخذ ردودك اليدوية فقط، ولا يعتبر ردود البوت نفسه مصدراً للتعلم.</div>
+    <div class="field"><div class="label">عدد الرسائل التي تفحص من كل محادثة</div><input id="messages" type="number" min="50" max="2000" value="500"></div>
     <div class="grid">
-      <button id="importBtn" class="import" onclick="importAll()">4) استيراد كل محادثات الزبائن</button>
-      <button class="secondary" onclick="learningStats()">5) إحصائيات قاعدة التعلم</button>
+      <button id="importBtn" class="purple" onclick="importAll()">استيراد كل محادثات الزبائن</button>
+      <button class="secondary" onclick="learningStats()">إحصائيات التعلم</button>
+      <button class="danger" onclick="clearLearning()">🗑 حذف التعلم من الرسائل</button>
     </div>
-
     <div class="progress"><div id="bar" class="bar"></div></div>
     <div id="progressText" class="small">لم يبدأ الاستيراد.</div>
+    <div class="note"><b>حذف التعلم من الرسائل</b> يحذف الأمثلة المستخرجة من محادثات الزبائن فقط. قاعدة Q&amp;A وKnowledge وذاكرة المحادثة تبقى كما هي.</div>
   </div>
 
-  <div id="out" class="status">جاهز.</div>
+  <div class="card">
+    <div class="title">📋 قواعد البوت</div>
+    <div class="sub">اكتب أي قاعدة تريد أن يلتزم بها البوت. تقدر تضيف وتحذف وتوقف أي قاعدة متى بدك.</div>
+
+    <div class="examples">
+      <button onclick="putExample('تعامل مع المشترك باحترام وبأسلوب ودود ومختصر، ولا تستخدم أسلوباً جافاً.')">أسلوب المشترك</button>
+      <button onclick="putExample('لا تتحدث بسوء عن برنامج Cash Top. إذا توجد ملاحظة أو مشكلة مؤكدة اشرحها بشكل مهني وإيجابي واقترح الحل دون مهاجمة البرنامج.')">إيجابي عن البرنامج</button>
+      <button onclick="putExample('استخدم إيموجي مناسبة بشكل خفيف مع رسائل الترحيب، بدون مبالغة.')">إيموجي بالترحيب</button>
+      <button onclick="putExample('لا تسأل العميل نفس السؤال مرتين إذا سبق أن أجاب عنه، واستخدم سياق المحادثة قبل أن تسأل.')">لا تكرر الأسئلة</button>
+    </div>
+
+    <div class="field"><div class="label">نص القاعدة</div><textarea id="ruleText" placeholder="مثال: تعامل مع العميل بلهجة فلسطينية محترمة، واختصر الرد قدر الإمكان."></textarea></div>
+
+    <div class="field"><div class="label">رابط ملصق/صورة مباشر — اختياري</div><input id="mediaUrl" placeholder="https://example.com/sticker.webp"></div>
+    <div class="two">
+      <div class="field"><div class="label">اسم الملف — اختياري</div><input id="mediaFileName" placeholder="sticker.webp"></div>
+      <div class="field"><div class="label">متى يُرسل الملف؟</div>
+        <select id="mediaMode">
+          <option value="none">بدون ملف</option>
+          <option value="ai">حسب معنى القاعدة والسياق</option>
+          <option value="greeting">مع الترحيبات فقط</option>
+          <option value="always">مع كل رد</option>
+        </select>
+      </div>
+    </div>
+    <div class="small">إذا وضعت رابط ملف مباشر، يمكن للقاعدة إرساله مع الرد. استخدم رابطاً عاماً مباشراً للملف.</div>
+    <div class="grid"><button onclick="addRule()">+ إضافة القاعدة</button></div>
+    <hr>
+    <div class="two"><div class="title" style="font-size:16px;margin:0">القواعد المحفوظة</div><button class="light" onclick="loadRules()">تحديث القائمة</button></div>
+    <div id="rulesList" class="small" style="margin-top:10px">جاري التحميل...</div>
+  </div>
+
+  <div class="card">
+    <div class="title">✅ سلوك مدمج في النسخة</div>
+    <div class="oknote">يرد على الترحيبات مثل السلام عليكم، مرحبا، هلا، صباح الخير، مساء الخير وغيرها. ويتجاهل الرسائل التي هي مجرد نقاط/رموز، ويمنع تكرار نفس الرد حرفياً، ويفهم "بس؟ / طيب؟ / كيف؟" كمتابعة للسياق السابق.</div>
+  </div>
+
+  <div class="card"><div class="title">النتيجة</div><div id="out" class="status">جاهز.</div></div>
 </div>
 
 <script>
@@ -67,89 +98,109 @@ const out=document.getElementById('out');
 const bar=document.getElementById('bar');
 const progressText=document.getElementById('progressText');
 const importBtn=document.getElementById('importBtn');
-
+const rulesList=document.getElementById('rulesList');
 keyEl.value=localStorage.getItem('cashTopWebhookKey')||'';
 
 function getKey(){
   const key=keyEl.value.trim();
   if(!key){alert('أدخل POLL_SECRET');return null}
-  localStorage.setItem('cashTopWebhookKey',key);
-  return key;
+  localStorage.setItem('cashTopWebhookKey',key);return key;
 }
-
-async function getJson(url){
-  const r=await fetch(url,{cache:'no-store'});
-  const t=await r.text();
-  let d;try{d=JSON.parse(t)}catch{d={ok:false,raw:t}}
-  if(!r.ok && d.ok!==false)d.ok=false;
-  return d;
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+async function getJson(url,options={}){
+  const r=await fetch(url,{cache:'no-store',...options});
+  const t=await r.text(); let d;try{d=JSON.parse(t)}catch{d={ok:false,raw:t}}
+  if(!r.ok && d.ok!==false)d.ok=false; return d;
 }
+function show(d){out.textContent=typeof d==='string'?d:JSON.stringify(d,null,2)}
 
 async function runBasic(type){
   const key=getKey();if(!key)return;
   const path=type==='on'?'/api/webhook-on':type==='test'?'/api/webhook-test':'/api/webhook-check';
-  out.textContent='جاري التنفيذ...';
-  try{
-    const d=await getJson(path+'?key='+encodeURIComponent(key));
-    out.textContent=JSON.stringify(d,null,2);
-  }catch(e){out.textContent='ERROR: '+e.message}
+  show('جاري التنفيذ...');
+  try{show(await getJson(path+'?key='+encodeURIComponent(key)+'&_='+Date.now()))}catch(e){show('ERROR: '+e.message)}
 }
-
 function paintProgress(d){
-  const p=Math.max(0,Math.min(100,Number(d.progress||0)));
-  bar.style.width=p+'%';
-  progressText.textContent=
-    `التقدم: ${p}% — تمت معالجة ${d.processedChats||0} من ${d.totalChats||0} محادثة — أمثلة تعلم: ${d.importedPairs||0}`+
-    (d.errors?` — أخطاء: ${d.errors}`:'');
+  const p=Math.max(0,Math.min(100,Number(d.progress||0)));bar.style.width=p+'%';
+  progressText.textContent=`التقدم: ${p}% — تمت معالجة ${d.processedChats||0} من ${d.totalChats||0} محادثة — أمثلة تعلم: ${d.importedPairs||0}`+(d.errors?` — أخطاء: ${d.errors}`:'');
 }
-
 async function importAll(){
   const key=getKey();if(!key)return;
   const messages=Math.max(50,Math.min(2000,Number(document.getElementById('messages').value||500)));
-  importBtn.disabled=true;
-  bar.style.width='0%';
-  progressText.textContent='جاري جلب كل المحادثات المتاحة...';
-  out.textContent='بدء الاستيراد...';
-
+  importBtn.disabled=true;bar.style.width='0%';progressText.textContent='جاري جلب كل المحادثات المتاحة...';show('بدء الاستيراد...');
   try{
-    const start=await getJson(`/api/import-human-history?key=${encodeURIComponent(key)}&action=start&messages=${messages}&_=${Date.now()}`);
-    out.textContent=JSON.stringify(start,null,2);
+    const start=await getJson(`/api/import-human-history?key=${encodeURIComponent(key)}&action=start&messages=${messages}&_=${Date.now()}`);show(start);
     if(!start.ok)throw new Error(start.error||'فشل بدء الاستيراد');
-
-    if(!start.totalChats){
-      progressText.textContent='لا توجد محادثات شخصية متاحة للاستيراد.';
-      bar.style.width='100%';
-      return;
-    }
-
-    progressText.textContent=`تم العثور على ${start.totalChats} محادثة. جاري الاستيراد...`;
-
+    if(!start.totalChats){progressText.textContent='لا توجد محادثات شخصية متاحة.';bar.style.width='100%';return}
     while(true){
-      const d=await getJson(`/api/import-human-history?key=${encodeURIComponent(key)}&action=batch&batch=5&_=${Date.now()}`);
-      out.textContent=JSON.stringify(d,null,2);
-      if(!d.ok)throw new Error(d.error||'فشل الاستيراد');
-      paintProgress(d);
-      if(d.done)break;
-      await new Promise(r=>setTimeout(r,700));
+      const d=await getJson(`/api/import-human-history?key=${encodeURIComponent(key)}&action=batch&batch=5&_=${Date.now()}`);show(d);
+      if(!d.ok)throw new Error(d.error||'فشل الاستيراد');paintProgress(d);if(d.done)break;await new Promise(r=>setTimeout(r,700));
     }
-
-    progressText.textContent += ' ✅ اكتمل الاستيراد.';
-  }catch(e){
-    out.textContent='ERROR: '+e.message;
-    progressText.textContent='توقف الاستيراد بسبب خطأ. اضغط الزر من جديد للبدء من البداية.';
-  }finally{
-    importBtn.disabled=false;
-  }
+    progressText.textContent+=' ✅ اكتمل الاستيراد.';
+  }catch(e){show('ERROR: '+e.message);progressText.textContent='توقف الاستيراد بسبب خطأ.'}finally{importBtn.disabled=false}
 }
-
 async function learningStats(){
-  const key=getKey();if(!key)return;
-  out.textContent='جاري جلب الإحصائيات...';
-  try{
-    const d=await getJson('/api/learning-stats?key='+encodeURIComponent(key)+'&_='+Date.now());
-    out.textContent=JSON.stringify(d,null,2);
-  }catch(e){out.textContent='ERROR: '+e.message}
+  const key=getKey();if(!key)return;show('جاري جلب الإحصائيات...');
+  try{show(await getJson('/api/learning-stats?key='+encodeURIComponent(key)+'&_='+Date.now()))}catch(e){show('ERROR: '+e.message)}
 }
+async function clearLearning(){
+  const key=getKey();if(!key)return;
+  if(!confirm('متأكد؟ سيتم حذف كل التعلم المستخرج من رسائل الزبائن وردودك اليدوية. لن يتم حذف Q&A أو Knowledge.'))return;
+  show('جاري حذف التعلم...');
+  try{
+    const d=await getJson('/api/human-learning-clear?key='+encodeURIComponent(key),{method:'POST'});show(d);
+    if(d.ok){bar.style.width='0%';progressText.textContent='تم حذف التعلم من الرسائل.'}
+  }catch(e){show('ERROR: '+e.message)}
+}
+function putExample(text){document.getElementById('ruleText').value=text;document.getElementById('ruleText').focus()}
+async function addRule(){
+  const key=getKey();if(!key)return;
+  const text=document.getElementById('ruleText').value.trim();if(!text){alert('اكتب القاعدة أولاً');return}
+  const body={
+    text,
+    mediaUrl:document.getElementById('mediaUrl').value.trim(),
+    mediaFileName:document.getElementById('mediaFileName').value.trim(),
+    mediaMode:document.getElementById('mediaMode').value,
+    active:true
+  };
+  show('جاري حفظ القاعدة...');
+  try{
+    const d=await getJson('/api/rules?key='+encodeURIComponent(key),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});show(d);
+    if(d.ok){document.getElementById('ruleText').value='';document.getElementById('mediaUrl').value='';document.getElementById('mediaFileName').value='';document.getElementById('mediaMode').value='none';await loadRules()}
+  }catch(e){show('ERROR: '+e.message)}
+}
+async function loadRules(){
+  const key=getKey();if(!key){rulesList.textContent='أدخل POLL_SECRET أولاً.';return}
+  rulesList.textContent='جاري التحميل...';
+  try{
+    const d=await getJson('/api/rules?key='+encodeURIComponent(key)+'&_='+Date.now());
+    if(!d.ok)throw new Error(d.error||'فشل جلب القواعد');
+    const rules=d.rules||[];
+    if(!rules.length){rulesList.innerHTML='<div class="small">لا توجد قواعد بعد.</div>';return}
+    rulesList.innerHTML=rules.map(r=>{
+      const mode=r.mediaMode&&r.mediaMode!=='none'?` • ملف: ${esc(r.mediaMode)}`:'';
+      return `<div class="rule ${r.active===false?'off':''}">
+        <div class="ruleTop"><div class="ruleText">${esc(r.text)}</div></div>
+        <div class="badge">${r.active===false?'متوقفة':'فعالة'}${mode}</div>
+        ${r.mediaUrl?`<div class="small" style="margin-top:6px;direction:ltr;text-align:left">${esc(r.mediaUrl)}</div>`:''}
+        <div class="ruleActions" style="margin-top:9px">
+          <button class="secondary" onclick="toggleRule('${esc(r.id)}',${r.active===false?'true':'false'})">${r.active===false?'تشغيل':'إيقاف'}</button>
+          <button class="danger" onclick="deleteRule('${esc(r.id)}')">حذف</button>
+        </div>
+      </div>`
+    }).join('');
+  }catch(e){rulesList.textContent='ERROR: '+e.message}
+}
+async function toggleRule(id,active){
+  const key=getKey();if(!key)return;
+  const d=await getJson('/api/rules?key='+encodeURIComponent(key)+'&id='+encodeURIComponent(id),{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({active})});show(d);if(d.ok)loadRules()
+}
+async function deleteRule(id){
+  const key=getKey();if(!key)return;if(!confirm('حذف هذه القاعدة؟'))return;
+  const d=await getJson('/api/rules?key='+encodeURIComponent(key)+'&id='+encodeURIComponent(id),{method:'DELETE'});show(d);if(d.ok)loadRules()
+}
+keyEl.addEventListener('change',()=>{localStorage.setItem('cashTopWebhookKey',keyEl.value.trim());loadRules()});
+if(keyEl.value)loadRules();else rulesList.textContent='أدخل POLL_SECRET أولاً.';
 </script>
 </body>
 </html>
