@@ -80,7 +80,7 @@ hr{border:0;border-top:1px solid #eaecf0;margin:16px 0}
     <div class="small">إذا وضعت رابط ملف مباشر، يمكن للقاعدة إرساله مع الرد. استخدم رابطاً عاماً مباشراً للملف.</div>
     <div class="grid"><button onclick="addRule()">+ إضافة القاعدة</button></div>
     <hr>
-    <div class="two"><div class="title" style="font-size:16px;margin:0">القواعد المحفوظة</div><button class="light" onclick="loadRules()">تحديث القائمة</button></div>
+    <div class="two"><div class="title" style="font-size:16px;margin:0">القواعد المحفوظة</div><button class="light" onclick="loadRules()">تحديث القائمة</button></div><div class="small" style="margin-top:6px">القواعد تُقرأ وتُحفظ مباشرة في Firebase، بدون الاعتماد على /api/rules.</div>
     <div id="rulesList" class="small" style="margin-top:10px">جاري التحميل...</div>
   </div>
 
@@ -111,6 +111,25 @@ async function getJson(url,options={}){
   const r=await fetch(url,{cache:'no-store',...options});
   const t=await r.text(); let d;try{d=JSON.parse(t)}catch{d={ok:false,raw:t}}
   if(!r.ok && d.ok!==false)d.ok=false; return d;
+}
+
+const FIREBASE_DB='https://meopp-8f1fa-default-rtdb.firebaseio.com';
+const FIREBASE_RULES_PATH='cashTopAI/botRules';
+
+async function firebaseJson(path, options={}){
+  const r=await fetch(`${FIREBASE_DB}/${path}.json`,{
+    cache:'no-store',
+    headers:{'content-type':'application/json',...(options.headers||{})},
+    ...options
+  });
+  const t=await r.text();
+  let d=null;
+  try{ d=t?JSON.parse(t):null }catch{ throw new Error('Firebase returned invalid response') }
+  if(!r.ok) throw new Error(`Firebase HTTP ${r.status}${d?.error?': '+d.error:''}`);
+  return d;
+}
+function makeRuleId(){
+  return 'rule_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
 }
 function show(d){out.textContent=typeof d==='string'?d:JSON.stringify(d,null,2)}
 
@@ -155,28 +174,53 @@ async function clearLearning(){
 function putExample(text){document.getElementById('ruleText').value=text;document.getElementById('ruleText').focus()}
 async function addRule(){
   const key=getKey();if(!key)return;
-  const text=document.getElementById('ruleText').value.trim();if(!text){alert('اكتب القاعدة أولاً');return}
-  const body={
-    text,
-    mediaUrl:document.getElementById('mediaUrl').value.trim(),
-    mediaFileName:document.getElementById('mediaFileName').value.trim(),
-    mediaMode:document.getElementById('mediaMode').value,
-    active:true
+  const ruleText=document.getElementById('ruleText').value.trim();
+  if(!ruleText){alert('اكتب القاعدة أولاً');return}
+  const mediaUrl=document.getElementById('mediaUrl').value.trim();
+  let mediaMode=document.getElementById('mediaMode').value;
+  if(!mediaUrl) mediaMode='none';
+  else if(mediaMode==='none') mediaMode='ai';
+
+  const id=makeRuleId();
+  const rule={
+    text:ruleText.slice(0,1800),
+    active:true,
+    mediaUrl:mediaUrl.slice(0,1200),
+    mediaFileName:document.getElementById('mediaFileName').value.trim().slice(0,120),
+    mediaMode,
+    createdAt:Date.now(),
+    updatedAt:Date.now()
   };
-  show('جاري حفظ القاعدة...');
+
+  show('جاري حفظ القاعدة في Firebase...');
   try{
-    const d=await getJson('/api/rules?key='+encodeURIComponent(key),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});show(d);
-    if(d.ok){document.getElementById('ruleText').value='';document.getElementById('mediaUrl').value='';document.getElementById('mediaFileName').value='';document.getElementById('mediaMode').value='none';await loadRules()}
-  }catch(e){show('ERROR: '+e.message)}
+    await firebaseJson(`${FIREBASE_RULES_PATH}/${encodeURIComponent(id)}`,{
+      method:'PUT',
+      body:JSON.stringify(rule)
+    });
+    show({ok:true,source:'Firebase direct',id,rule});
+    document.getElementById('ruleText').value='';
+    document.getElementById('mediaUrl').value='';
+    document.getElementById('mediaFileName').value='';
+    document.getElementById('mediaMode').value='none';
+    await loadRules();
+  }catch(e){
+    show('ERROR: '+e.message);
+  }
 }
 async function loadRules(){
   const key=getKey();if(!key){rulesList.textContent='أدخل POLL_SECRET أولاً.';return}
-  rulesList.textContent='جاري التحميل...';
+  rulesList.textContent='جاري التحميل من Firebase...';
   try{
-    const d=await getJson('/api/rules?key='+encodeURIComponent(key)+'&_='+Date.now());
-    if(!d.ok)throw new Error(d.error||'فشل جلب القواعد');
-    const rules=d.rules||[];
-    if(!rules.length){rulesList.innerHTML='<div class="small">لا توجد قواعد بعد.</div>';return}
+    const obj=await firebaseJson(FIREBASE_RULES_PATH);
+    const rules=Object.entries(obj||{}).map(([id,v])=>({id,...(v||{})}))
+      .sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));
+
+    if(!rules.length){
+      rulesList.innerHTML='<div class="small">لا توجد قواعد بعد. أضف أول قاعدة من الأعلى.</div>';
+      return;
+    }
+
     rulesList.innerHTML=rules.map(r=>{
       const mode=r.mediaMode&&r.mediaMode!=='none'?` • ملف: ${esc(r.mediaMode)}`:'';
       return `<div class="rule ${r.active===false?'off':''}">
@@ -187,17 +231,31 @@ async function loadRules(){
           <button class="secondary" onclick="toggleRule('${esc(r.id)}',${r.active===false?'true':'false'})">${r.active===false?'تشغيل':'إيقاف'}</button>
           <button class="danger" onclick="deleteRule('${esc(r.id)}')">حذف</button>
         </div>
-      </div>`
+      </div>`;
     }).join('');
-  }catch(e){rulesList.textContent='ERROR: '+e.message}
+  }catch(e){
+    rulesList.textContent='ERROR Firebase: '+e.message;
+  }
 }
 async function toggleRule(id,active){
   const key=getKey();if(!key)return;
-  const d=await getJson('/api/rules?key='+encodeURIComponent(key)+'&id='+encodeURIComponent(id),{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({active})});show(d);if(d.ok)loadRules()
+  try{
+    await firebaseJson(`${FIREBASE_RULES_PATH}/${encodeURIComponent(id)}`,{
+      method:'PATCH',
+      body:JSON.stringify({active,updatedAt:Date.now()})
+    });
+    show({ok:true,source:'Firebase direct',id,active});
+    await loadRules();
+  }catch(e){show('ERROR: '+e.message)}
 }
 async function deleteRule(id){
-  const key=getKey();if(!key)return;if(!confirm('حذف هذه القاعدة؟'))return;
-  const d=await getJson('/api/rules?key='+encodeURIComponent(key)+'&id='+encodeURIComponent(id),{method:'DELETE'});show(d);if(d.ok)loadRules()
+  const key=getKey();if(!key)return;
+  if(!confirm('حذف هذه القاعدة؟'))return;
+  try{
+    await firebaseJson(`${FIREBASE_RULES_PATH}/${encodeURIComponent(id)}`,{method:'DELETE'});
+    show({ok:true,source:'Firebase direct',deleted:id});
+    await loadRules();
+  }catch(e){show('ERROR: '+e.message)}
 }
 keyEl.addEventListener('change',()=>{localStorage.setItem('cashTopWebhookKey',keyEl.value.trim());loadRules()});
 if(keyEl.value)loadRules();else rulesList.textContent='أدخل POLL_SECRET أولاً.';
