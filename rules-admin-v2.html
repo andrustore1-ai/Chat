@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cash Top - Rules V2</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f7f9;font-family:system-ui,-apple-system,Segoe UI,Tahoma,Arial;color:#17202a;padding:18px}
+.wrap{max-width:760px;margin:auto}.card{background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 6px 24px #0000000d}
+h1{font-size:23px;margin:0 0 8px}h2{font-size:18px;margin:0 0 10px}.note{font-size:13px;color:#667085;line-height:1.8}
+input,textarea,select{width:100%;border:1px solid #d0d5dd;border-radius:12px;padding:12px;font:inherit;margin-top:8px}
+textarea{min-height:110px;resize:vertical}button{border:0;border-radius:12px;padding:13px 16px;font-weight:700;font:inherit;cursor:pointer;background:#12a05c;color:white}
+button.dark{background:#344054}button.red{background:#d92d20}button.gray{background:#667085}.buttons{display:grid;gap:9px;margin-top:12px}
+.rule{border:1px solid #e4e7ec;border-radius:14px;padding:13px;margin-top:10px;background:#fafafa}.off{opacity:.6}.ruleText{white-space:pre-wrap;line-height:1.75;font-weight:600}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions button{padding:9px 13px;font-size:14px}
+.badge{display:inline-block;background:#eef4ff;color:#3538cd;padding:4px 8px;border-radius:999px;font-size:12px;margin-top:7px}
+#status{white-space:pre-wrap;word-break:break-word;background:#101828;color:#e5e7eb;border-radius:14px;padding:12px;margin-top:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;min-height:55px}
+.version{display:inline-block;background:#ecfdf3;color:#027a48;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="version">Rules Admin V2 — جديد</div>
+    <h1>قواعد بوت Cash Top</h1>
+    <div class="note">هذه صفحة جديدة بالكامل وتستخدم <b>/api/rules-v2</b>، لذلك لا تعتمد على الصفحة أو المسار القديم.</div>
+    <input id="secret" type="password" placeholder="POLL_SECRET">
+    <div class="buttons">
+      <button class="dark" onclick="testApi()">فحص اتصال القواعد</button>
+      <button class="dark" onclick="loadRules()">تحديث القواعد</button>
+    </div>
+    <div id="status">جاهز.</div>
+  </div>
+
+  <div class="card">
+    <h2>إضافة قاعدة</h2>
+    <textarea id="ruleText" placeholder="مثال: لا تكرر نفس السؤال إذا أجاب العميل عنه سابقاً."></textarea>
+    <input id="mediaUrl" placeholder="رابط صورة/ملصق مباشر — اختياري">
+    <input id="mediaFileName" placeholder="اسم الملف مثل sticker.webp — اختياري">
+    <select id="mediaMode">
+      <option value="none">بدون ملف</option>
+      <option value="greeting">مع الترحيب</option>
+      <option value="ai">حسب سياق الرد</option>
+      <option value="always">مع كل رد</option>
+    </select>
+    <div class="buttons">
+      <button onclick="addRule()">+ إضافة القاعدة</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>القواعد المحفوظة</h2>
+    <div id="rules"><div class="note">اضغط تحديث القواعد.</div></div>
+  </div>
+</div>
+
+<script>
+const API='/api/rules-v2';
+const secret=document.getElementById('secret');
+const statusEl=document.getElementById('status');
+const rulesEl=document.getElementById('rules');
+secret.value=localStorage.getItem('cashTopRulesSecret')||'';
+
+function key(){
+  const v=secret.value.trim();
+  if(!v){alert('أدخل POLL_SECRET');return null}
+  localStorage.setItem('cashTopRulesSecret',v);
+  return v;
+}
+function esc(v){
+  return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+async function call(method='',body=null,id=''){
+  const k=key(); if(!k)throw new Error('Missing secret');
+  let url=API+'?key='+encodeURIComponent(k)+'&_='+Date.now();
+  if(id)url+='&id='+encodeURIComponent(id);
+  const opt={method:method||'GET',cache:'no-store',headers:{}};
+  if(body!==null){
+    opt.headers['content-type']='application/json';
+    opt.body=JSON.stringify(body);
+  }
+  const r=await fetch(url,opt);
+  const raw=await r.text();
+  let d; try{d=JSON.parse(raw)}catch{d={ok:false,error:'Non-JSON response',raw}}
+  if(!r.ok || d.ok===false)throw new Error((d.error||raw||('HTTP '+r.status))+' [HTTP '+r.status+']');
+  return d;
+}
+function show(x){statusEl.textContent=typeof x==='string'?x:JSON.stringify(x,null,2)}
+
+async function testApi(){
+  show('جاري الفحص...');
+  try{
+    const d=await call();
+    show({ok:true,message:'rules-v2 يعمل',count:d.count,source:d.source});
+  }catch(e){show('ERROR: '+e.message)}
+}
+async function loadRules(){
+  rulesEl.innerHTML='<div class="note">جاري التحميل...</div>';
+  try{
+    const d=await call();
+    const rules=d.rules||[];
+    show({ok:true,source:d.source,count:rules.length});
+    if(!rules.length){
+      rulesEl.innerHTML='<div class="note">لا توجد قواعد محفوظة بعد.</div>';
+      return;
+    }
+    rulesEl.innerHTML=rules.map(r=>`
+      <div class="rule ${r.active===false?'off':''}">
+        <div class="ruleText">${esc(r.text)}</div>
+        <span class="badge">${r.active===false?'متوقفة':'فعالة'}${r.mediaMode&&r.mediaMode!=='none'?' • '+esc(r.mediaMode):''}</span>
+        ${r.mediaUrl?`<div class="note" style="direction:ltr;text-align:left;margin-top:7px">${esc(r.mediaUrl)}</div>`:''}
+        <div class="actions">
+          <button class="gray" onclick="toggleRule('${esc(r.id)}',${r.active===false?'true':'false'})">${r.active===false?'تشغيل':'إيقاف'}</button>
+          <button class="red" onclick="deleteRule('${esc(r.id)}')">حذف</button>
+        </div>
+      </div>`).join('');
+  }catch(e){
+    rulesEl.innerHTML='<div class="note">تعذر جلب القواعد. شوف الخطأ الأسود فوق.</div>';
+    show('ERROR: '+e.message);
+  }
+}
+async function addRule(){
+  const text=document.getElementById('ruleText').value.trim();
+  if(!text){alert('اكتب القاعدة');return}
+  try{
+    const d=await call('POST',{
+      text,
+      active:true,
+      mediaUrl:document.getElementById('mediaUrl').value.trim(),
+      mediaFileName:document.getElementById('mediaFileName').value.trim(),
+      mediaMode:document.getElementById('mediaMode').value
+    });
+    show(d);
+    document.getElementById('ruleText').value='';
+    await loadRules();
+  }catch(e){show('ERROR: '+e.message)}
+}
+async function toggleRule(id,active){
+  try{show(await call('PATCH',{active},id));await loadRules()}catch(e){show('ERROR: '+e.message)}
+}
+async function deleteRule(id){
+  if(!confirm('حذف القاعدة؟'))return;
+  try{show(await call('DELETE',null,id));await loadRules()}catch(e){show('ERROR: '+e.message)}
+}
+</script>
+</body>
+</html>
